@@ -1,0 +1,6 @@
+{
+  "name": "FocusLock",
+  "description": "Digital wellbeing and cross-platform app blocking platform. Break the scrolling loop, protect your focus, and reclaim screen time across devices.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

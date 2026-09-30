@@ -1,0 +1,163 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Common hardened primitive helpers
+    function isSignedIn() {
+      return request.auth != null && request.auth.uid != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.:]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Health / connection test doc
+    match /test/{testId} {
+      allow read: if isSignedIn();
+      allow write: if false;
+    }
+
+    // User Profile: /users/{uid}
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email'])
+        && data.uid is string && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 256
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100))
+        && (!('phoneNumber' in data) || (data.phoneNumber is string && data.phoneNumber.size() <= 30))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 1000));
+    }
+
+    match /users/{uid} {
+      allow get: if isOwner(uid);
+      allow list: if false; // Blanket user scraping is strictly forbidden
+      allow create: if isOwner(uid) && isValidId(uid) && isValidUserProfile(incoming()) && incoming().uid == uid;
+      allow update: if isOwner(uid) && isValidUserProfile(incoming()) && incoming().uid == uid;
+      allow delete: if isOwner(uid);
+
+      // Devices: /users/{uid}/devices/{deviceId}
+      function isValidDevice(data) {
+        return data.keys().hasAll(['deviceId', 'platform'])
+          && data.deviceId is string && data.deviceId.size() <= 128
+          && data.platform in ['android', 'extension', 'web', 'desktop']
+          && (!('deviceName' in data) || (data.deviceName is string && data.deviceName.size() <= 100))
+          && (!('appVersion' in data) || (data.appVersion is string && data.appVersion.size() <= 30));
+      }
+
+      match /devices/{deviceId} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidId(deviceId) && isValidDevice(incoming());
+        allow update: if isOwner(uid) && isValidDevice(incoming());
+        allow delete: if isOwner(uid);
+      }
+
+      // Selected Apps / Domains: /users/{uid}/selectedApps/{appId}
+      function isValidApp(data) {
+        return data.keys().hasAll(['id', 'name', 'ruleType'])
+          && data.id is string && data.id.size() <= 128
+          && data.name is string && data.name.size() <= 100
+          && data.ruleType in ['hard_block', 'gentle_intervention', 'daily_limit', 'scheduled']
+          && (!('packageName' in data) || (data.packageName is string && data.packageName.size() <= 200))
+          && (!('domain' in data) || (data.domain is string && data.domain.size() <= 200));
+      }
+
+      match /selectedApps/{appId} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidId(appId) && isValidApp(incoming());
+        allow update: if isOwner(uid) && isValidApp(incoming());
+        allow delete: if isOwner(uid);
+      }
+
+      // Focus Profiles: /users/{uid}/profiles/{profileId}
+      function isValidProfile(data) {
+        return data.keys().hasAll(['id', 'name', 'type', 'enabled'])
+          && data.id is string && data.id.size() <= 128
+          && data.name is string && data.name.size() <= 100
+          && data.type in ['work', 'sleep', 'workout', 'social', 'game', 'custom']
+          && data.enabled is bool
+          && (!('days' in data) || (data.days is list && data.days.size() <= 7))
+          && (!('selectedApps' in data) || (data.selectedApps is list && data.selectedApps.size() <= 100));
+      }
+
+      match /profiles/{profileId} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidId(profileId) && isValidProfile(incoming());
+        allow update: if isOwner(uid) && isValidProfile(incoming());
+        allow delete: if isOwner(uid);
+      }
+
+      // Focus Sessions: /users/{uid}/focusSessions/{sessionId}
+      function isValidSession(data) {
+        return data.keys().hasAll(['id', 'startTime', 'plannedDuration'])
+          && data.id is string && data.id.size() <= 128
+          && data.startTime is number
+          && data.plannedDuration is number
+          && (!('goal' in data) || (data.goal is string && data.goal.size() <= 200));
+      }
+
+      match /focusSessions/{sessionId} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidId(sessionId) && isValidSession(incoming());
+        allow update: if isOwner(uid) && isValidSession(incoming());
+        allow delete: if isOwner(uid);
+      }
+
+      // Usage Daily: /users/{uid}/usageDaily/{dateId}
+      function isValidUsage(data) {
+        return data.keys().hasAll(['date'])
+          && data.date is string && data.date.size() <= 20
+          && (!('screenTimeSeconds' in data) || data.screenTimeSeconds is number)
+          && (!('focusTimeSeconds' in data) || data.focusTimeSeconds is number);
+      }
+
+      match /usageDaily/{dateId} {
+        allow get, list: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidId(dateId) && isValidUsage(incoming());
+        allow update: if isOwner(uid) && isValidUsage(incoming());
+        allow delete: if isOwner(uid);
+      }
+
+      // Subscriptions: /users/{uid}/subscriptions/{subId}
+      function isValidSubscription(data) {
+        return data.keys().hasAll(['tier', 'status'])
+          && data.tier in ['free', 'pro', 'family']
+          && data.status in ['active', 'trialing', 'canceled', 'expired'];
+      }
+
+      match /subscriptions/{subId} {
+        allow get, list: if isOwner(uid);
+        allow create, update: if isOwner(uid) && isValidId(subId) && isValidSubscription(incoming());
+        allow delete: if false; // Audit retention
+      }
+    }
+
+    // Outbound Mail queue trigger
+    function isValidMail(data) {
+      return data.keys().hasAll(['to'])
+        && data.to is string && data.to.size() <= 256;
+    }
+
+    match /mail/{mailId} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn() && isValidId(mailId) && isValidMail(incoming());
+      allow update, delete: if false;
+    }
+  }
+}

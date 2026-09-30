@@ -1,0 +1,185 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile, settings, notification preferences, and privacy controls",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "photoURL": { "type": "string", "maxLength": 1000 },
+        "phoneNumber": { "type": "string", "maxLength": 30 },
+        "phoneVerified": { "type": "boolean" },
+        "settings": { "type": "object" },
+        "notificationPreferences": { "type": "object" },
+        "privacySettings": { "type": "object" },
+        "subscriptionSummary": { "type": "object" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "UserDevice": {
+      "title": "UserDevice",
+      "description": "Registered device status, platform, and verified permissions",
+      "type": "object",
+      "properties": {
+        "deviceId": { "type": "string", "maxLength": 128 },
+        "platform": { "type": "string", "enum": ["android", "extension", "web", "desktop"] },
+        "deviceName": { "type": "string", "maxLength": 100 },
+        "appVersion": { "type": "string", "maxLength": 30 },
+        "lastSeen": { "type": "string" },
+        "permissions": { "type": "object" },
+        "batteryOptimization": { "type": "boolean" },
+        "usageAccess": { "type": "boolean" },
+        "overlayPermission": { "type": "boolean" },
+        "biometricEnabled": { "type": "boolean" }
+      },
+      "required": ["deviceId", "platform"]
+    },
+    "SelectedApp": {
+      "title": "SelectedApp",
+      "description": "Target application or web domain to block or intervene with",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "packageName": { "type": "string", "maxLength": 200 },
+        "domain": { "type": "string", "maxLength": 200 },
+        "category": { "type": "string", "maxLength": 50 },
+        "iconReference": { "type": "string", "maxLength": 100 },
+        "enabled": { "type": "boolean" },
+        "ruleType": { "type": "string", "enum": ["hard_block", "gentle_intervention", "daily_limit", "scheduled"] },
+        "dailyLimitSeconds": { "type": "number" },
+        "scheduleId": { "type": "string", "maxLength": 128 },
+        "interventionId": { "type": "string", "maxLength": 50 },
+        "priority": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "ruleType"]
+    },
+    "FocusProfile": {
+      "title": "FocusProfile",
+      "description": "Configured focus profile with app rules, schedules, and intervention style",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 100 },
+        "type": { "type": "string", "enum": ["work", "sleep", "workout", "social", "game", "custom"] },
+        "enabled": { "type": "boolean" },
+        "days": { "type": "array" },
+        "startTime": { "type": "string", "maxLength": 10 },
+        "endTime": { "type": "string", "maxLength": 10 },
+        "selectedApps": { "type": "array" },
+        "blockedDomains": { "type": "array" },
+        "dailyLimit": { "type": "number" },
+        "intervention": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "type", "enabled"]
+    },
+    "FocusSession": {
+      "title": "FocusSession",
+      "description": "Recorded active or historical focus session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "profileId": { "type": "string", "maxLength": 128 },
+        "profileName": { "type": "string", "maxLength": 100 },
+        "startTime": { "type": "number" },
+        "endTime": { "type": "number" },
+        "plannedDuration": { "type": "number" },
+        "actualDuration": { "type": "number" },
+        "goal": { "type": "string", "maxLength": 200 },
+        "completed": { "type": "boolean" },
+        "bypassed": { "type": "boolean" },
+        "emergencyUnlockUsed": { "type": "boolean" },
+        "breakUsed": { "type": "boolean" },
+        "skipUsed": { "type": "boolean" },
+        "deviceId": { "type": "string", "maxLength": 128 }
+      },
+      "required": ["id", "startTime", "plannedDuration"]
+    },
+    "UsageDaily": {
+      "title": "UsageDaily",
+      "description": "Aggregated daily screen time, blocks, interventions, and unlocks",
+      "type": "object",
+      "properties": {
+        "date": { "type": "string", "maxLength": 20 },
+        "screenTimeSeconds": { "type": "number" },
+        "unlockCount": { "type": "number" },
+        "focusTimeSeconds": { "type": "number" },
+        "blockedAttempts": { "type": "number" },
+        "interventionAttempts": { "type": "number" },
+        "interventionPassed": { "type": "number" },
+        "interventionSkipped": { "type": "number" },
+        "emergencyUnlocks": { "type": "number" },
+        "breakMinutes": { "type": "number" }
+      },
+      "required": ["date"]
+    },
+    "UserSubscription": {
+      "title": "UserSubscription",
+      "description": "Current subscription tier and verified entitlement",
+      "type": "object",
+      "properties": {
+        "tier": { "type": "string", "enum": ["free", "pro", "family"] },
+        "productId": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["active", "trialing", "canceled", "expired"] },
+        "startAt": { "type": "number" },
+        "expiresAt": { "type": "number" },
+        "store": { "type": "string", "maxLength": 50 },
+        "verifiedAt": { "type": "number" }
+      },
+      "required": ["tier", "status"]
+    },
+    "MailMessage": {
+      "title": "MailMessage",
+      "description": "Automated email delivery queue trigger",
+      "type": "object",
+      "properties": {
+        "to": { "type": "string", "maxLength": 256 },
+        "template": { "type": "string", "maxLength": 100 },
+        "message": { "type": "object" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["to"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "UserProfile",
+      "description": "Primary user profile, settings, preferences"
+    },
+    "/users/{uid}/devices/{deviceId}": {
+      "schema": "UserDevice",
+      "description": "Device registrations and permission statuses"
+    },
+    "/users/{uid}/selectedApps/{appId}": {
+      "schema": "SelectedApp",
+      "description": "Configured apps and domains with block and intervention policies"
+    },
+    "/users/{uid}/profiles/{profileId}": {
+      "schema": "FocusProfile",
+      "description": "Focus presets and scheduled routines"
+    },
+    "/users/{uid}/focusSessions/{sessionId}": {
+      "schema": "FocusSession",
+      "description": "Active and past focus sessions"
+    },
+    "/users/{uid}/usageDaily/{dateId}": {
+      "schema": "UsageDaily",
+      "description": "Daily screen time and intervention usage statistics"
+    },
+    "/users/{uid}/subscriptions/{subId}": {
+      "schema": "UserSubscription",
+      "description": "Subscription records and status"
+    },
+    "/mail/{mailId}": {
+      "schema": "MailMessage",
+      "description": "Outbound email logs and triggers"
+    }
+  }
+}
