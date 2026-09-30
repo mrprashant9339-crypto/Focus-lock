@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">FocusLock</string>
+    <string name="tagline">Conscious digital wellbeing &amp; mindful app protection</string>
+    <string name="notification_channel_timer_name">Active Focus Session</string>
+    <string name="notification_channel_timer_desc">Shows ongoing focus timer countdown and controls</string>
+    <string name="notification_channel_alerts_name">FocusLock Alerts</string>
+    <string name="notification_channel_alerts_desc">Notifies when sessions complete or limits are reached</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_stop">Stop</string>
+</resources>
